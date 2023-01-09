@@ -15,3 +15,6 @@ thermal stress and the population growth rate, lambda.
 The R/VitalRateFunctions_old.Rmd script uses the vital rates dataset to model different vital rate functions, which is the first step in building an Integral Projection Model.
 
 
+
+
+Mention that model regional IPMs and SIG IPMs

@@ -1,0 +1,53 @@
+﻿Site,Date,POCS,POSP,MOSP,Notes
+OAH_OCC_010,3/7/17,35,26,-,"No EMPTY flag used; Did not delineate MOSP, only delineated some mounding POSP"
+OAH_OCC_010,5/7/19,35,26,-,"No EMPTY flag used; Did not delineate MOSP, only delineated some mounding POSP"
+MAI_SIO_OL3,7/22/14,28,28,10,
+MAI_SIO_OL3,7/14/15,28,28,10,
+MAI_SIO_OL3,11/4/15,28,28,10,
+MAI_SIO_OL3,6/16/16,28,28,10,
+MAI_SIO_OL3,11/29/16,28,28,10,
+MAI_SIO_OL3,7/26/17,28,28,10,
+MAI_SIO_K01,7/21/14,10,10,10,
+MAI_SIO_K01,7/10/15,10,10,10,
+MAI_SIO_K01,11/2/15,10,10,10,
+MAI_SIO_K01,6/16/16,10,10,10,
+MAI_SIO_K01,11/30/16,10,10,10,
+MAI_SIO_K01,7/28/17,10,10,10,
+MAI_SIO_K01,9/14/18,10,10,10,
+MAI_SIO_K02,7/21/14,10,10,10,
+MAI_SIO_K02,7/11/15,10,10,10,
+MAI_SIO_K02,7/4/16,10,10,10,
+MAI_SIO_K02,8/2/17,10,10,10,
+MAI_SIO_K02,9/14/18,10,10,10,
+HAW_OCC_010,8/11/16,10,10,10,
+HAW_OCC_010,7/19/19,10,10,10,
+HAW_SIO_K08,4/13/15,10,10,10,circplot #9 skipped b/c of hole in models
+HAW_SIO_K08,4/8/17,10,10,10,circplot #9 skipped b/c of hole in models
+HAW_SIO_K08,7/19/19,10,10,10,circplot #9 skipped b/c of hole in models
+MOL_SIO_908,4/19/17,-,-,-,In progress
+MOL_SIO_908,5/3/19,-,-,-,In progress
+HAW_SIO_K10,4/15/15,8,25,17,No EMPTY tag used = all may have been searched for up to 25
+HAW_SIO_K10,4/8/17,0,25,17,No EMPTY tag used = all may have been searched for up to 25
+HAW_SIO_K10,7/17/19,0,25,17,No EMPTY tag used = all may have been searched for up to 25
+HAW_OCC_002,8/15/16,66,66,66,
+HAW_OCC_002,7/15/19,66,66,66,
+FFS_OCC_002,9/6/13,13,13,13,"Poor overlap and circplots surveyed were: 2,4,5,6,8,14-18,20,23,24"
+FFS_OCC_002,9/25/16,21,21,21,"Poor overlap and circplots surveyed were:1,2,3,5,6,7,9,10,11,13-24"
+FFS_OCC_002,8/28/19,15,15,15,"Poor overlap and circplots surveyed were:1,2,3,6,7,9,10,11,12,13,15,18,19,21,22"
+FFS_OCC_014,9/6/13,8,8,8,1-9 skipped 6
+FFS_OCC_014,9/2/16,14,14,14,1-9 skipped 6 11-16
+FFS_OCC_014,8/27/19,7,7,7,17-Nov
+LIS_OCC_005,9/12/13,0,26,14,"no POCS, some holes"
+LIS_OCC_005,9/18/16,0,26,14,"no POCS, some holes"
+LIS_OCC_005,8/30/19,0,23,12,"no POCS, some holes"
+KUR_OCC_010,9/12/16,14,20,0,no MOSP or holes at site
+KUR_OCC_010,9/2/19,14,20,0,no MOSP or holes at site
+PHR_OCC_016,9/11/13,0,11,0,no overlap between 2013 & 2016
+PHR_OCC_016,9/11/16,0,12,0,no overlap between 2013 & 2016
+PHR_OCC_016,9/4/19,0,16,0,"Although 3rd year surveyed, we only have 1 trasition year each. (2013-2019 & 2016-2019)."
+HAW_OCC_003,8/8/16,23,23,23,25 circplots shown on arc but skipped #2 and #9 bc of holes in plot
+HAW_OCC_003,7/13/19,23,23,23,25 circplots shown on arc but skipped #2 and #9 bc of holes in plot
+OAH_XXX_022,8/1/16,18,6,0,
+OAH_XXX_022,10/4/18,18,6,0,
+MAI_OCC_002,7/14/16,25,13,0,No EMPTY tag used = all may have been searched for up to 25
+MAI_OCC_002,4/27/19,25,3,0,No EMPTY tag used = all may have been searched for up to 25

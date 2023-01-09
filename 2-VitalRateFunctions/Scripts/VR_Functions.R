@@ -20,7 +20,8 @@ source("2-VitalRateFunctions/Scripts/gcdist.R")
 # Loading / Managing DataFrames: ColonyLevel, surv_dat  ----------------------------------------------  ---------
 
 ##Manage ColonyLevel and create surv_dat
-load("1-Annotations_ColonyTransitions/Output/Patch_And_Colony_Data.rdata") #ColonyLevel dataset
+load("1-Annotations_ColonyTransitions/Output/Patch_And_Colony_Data.rdata") #ColonyLevel dataset 
+#(This includes the PatchLevel dataset. We performed all annotations at the colony scale (the sum of all associated patches in cases of fission/fusion/partial mort))
 if(!all(c("Survival","log10_ESc")%in%names(ColonyLevel))){
   #LN size
   ColonyLevel$ln_SS <- log(ColonyLevel$StartingSize)
@@ -83,11 +84,11 @@ Usis=unique(ColonyLevel$SIS)
 Nsig=length(Usig);Nsig
 Nsis=length(Usis);Nsis
 
-Name="Streamlined_VR_Models_"
+Name="VR_Models_"
 
 # Load Data to Get Proportion of "True" Recruitment ------------------------------------
 #Assign SFM Sites to Sectors 
-sitemd=read.csv("data/Thesis_Sites_Metadata2.csv");names(sitemd)[1]="Site";names(sitemd)[1]="Site";sitemd$EndingDate=mdy(sitemd$SampleDate.MM.DD.YYYY.)
+sitemd=read.csv("2-VitalRateFunctions/Data/Sites_Metadata.csv");names(sitemd)[1]="Site";names(sitemd)[1]="Site";sitemd$EndingDate=mdy(sitemd$SampleDate.MM.DD.YYYY.)
 sitemd <- select(sitemd, Site, Latitude, Longitude) #get 1 lat/long for each site
 sitemd <- distinct(sitemd)
 #sitemd=sitemd %>% group_by(Site) %>% summarize(Lat=mean(Latitude),Lon=mean(Longitude))
@@ -102,7 +103,7 @@ uSD=ColonyLevel[,c("Site","StartingDate","EndingDate")] %>%
 
 CL.sf=as.data.frame(left_join(uSD,sitemd[,c("Site","Latitude","Longitude")],by=c("Site"))) #Site,Date,Lat,Long dataframe
 CL.sf=st_as_sf(na.omit(CL.sf),coords=c("Longitude","Latitude")) #create geometry column
-secshp= st_read(dsn = "data/SectorSHP",layer = "ALLPacific_Sectors_Islands_5km_buffer")
+secshp= st_read(dsn = "2-VitalRateFunctions/Data/SectorSHP",layer = "ALLPacific_Sectors_Islands_5km_buffer")
 
 CL.sf = CL.sf %>% st_set_crs(value = st_crs(secshp)) #retrieve coordinate system
 Site2Sec=st_join(CL.sf,secshp[,"SEC_NAME"])
@@ -111,9 +112,9 @@ Site2Sec=st_join(CL.sf,secshp[,"SEC_NAME"])
 Site2Sec_ONLY=unique(st_drop_geometry(Site2Sec)[,c("Site","SEC_NAME")])
 Site2Sec_ONLY$SEC_NAME[Site2Sec_ONLY$Site=="HAW_OCC_003"]="HAW_PUNA"
 Site2Sec_ONLY$SEC_NAME[Site2Sec_ONLY$Site=="HAW_SIO_K08"]="HAW_KONA"
-
-#ColonyLevel=ColonyLevel %>% left_join(Site2Sec_ONLY[,c("Site","SEC_NAME")],by="Site")
-#save(ColonyLevel, file="data/Colony_Data_20210917_edited.rdata")
+ColonyLevel=ColonyLevel %>% left_join(Site2Sec_ONLY[,c("Site","SEC_NAME")],by="Site")
+#Save final dataset of coral colonies
+save(ColonyLevel, file="2-VitalRateFunctions/Output/Colony_Data_edited.rdata")
 
 
 #Get observed proportion of 'juveniles' as true recruits (SfM data)
@@ -193,7 +194,7 @@ for(i_b in 1:length(binwidths)){
   #Case 1: Assume Site-Level Stock-Recruitment
   
   #Area Surveyed for each SIG
-  Asurv=read.csv("./data/AreaSurveyed_N_Circrats.csv"); names(Asurv)[1]="Site"
+  Asurv=read.csv("2-VitalRateFunctions/Data/AreaSurveyed_N_Circrats.csv"); names(Asurv)[1]="Site"
   Asurv$Site[Asurv$Site=="OAH_XXX_022"]="OAH_OCC_005"
   Asurv$EndingDate=mdy(Asurv$Date)
   Asurv_l=Asurv[,c("Site","EndingDate","POCS","POSP","MOSP")]%>%
@@ -223,8 +224,8 @@ for(i_b in 1:length(binwidths)){
       RecSFM_p_SiteAdcm2_Yr=RecSFM_p_SiteAdcm2/Interval_Years) # numb recruits/total adult area cm2 annualized
   
   RecSFMDataFrame=as.data.frame(RecSFMTib)
-  #write.csv(RecSFMDataFrame, "output/SiteLevelStockRec.csv", row.names = FALSE)
-  #save(RecSFMDataFrame, file = paste0("data/",Name,"_RecSFMrates.rdata"))
+  write.csv(RecSFMDataFrame, "2-VitalRateFunctions/Output/SiteLevelStockRec.csv", row.names = FALSE)
+  save(RecSFMDataFrame, file = paste0("2-VitalRateFunctions/Output/",Name,"_RecSFMrates.rdata"))
   
   #plot
   hist(RecSFMDataFrame$RecSFM_p_SiteAdcm2_Yr, breaks = 20)
@@ -241,21 +242,26 @@ for(i_b in 1:length(binwidths)){
               SiteStock_q05= quantile(RecSFM_p_SiteAdcm2_Yr, c(0.05),na.rm = TRUE),
               SiteStock_q95= quantile(RecSFM_p_SiteAdcm2_Yr, c(0.95),na.rm = TRUE)
     )
-  #write.csv(RecSFMSummary, "output/SiteLevelStockRec_regional.csv", row.names = FALSE)
+  save(RecSFMSummary, file = paste0("2-VitalRateFunctions/Output/",Name,"_RecSFMrates_regional.rdata"))
+  write.csv(RecSFMSummary, "2-VitalRateFunctions/Output/SiteLevelStockRec_regional.csv", row.names = FALSE)
   
 
   
-  #REA Observed Recruitment Rates per adult cover, at Sector and Site Level, 
-  #with SIG matching site-level data grouped at sector containing SIG
   
-  #Case 2: Assum Sector-Level Stock-Recruitment
+  ################################################################################
+  #REA Recruitment Rates 
+  ################################################################################
+  #REA Observed Recruitment Rates per adult cover, at Sector and Site Level, with SIG matching site-level data grouped at sector containing SIG
+  
+  #Case 2: Assume Sector-Level Stock-Recruitment
   #Site Recruitment, Sector Stock
+  
   #Get Site-Level and Sector_level REA juv density
-  rea_sec=read.csv("data/NWHI_MHI_REA_Data_Sector.csv")
+  rea_sec=read.csv("2-VitalRateFunctions/Data/NWHI_MHI_REA_Data_Sector.csv")
   
   #Get Percent Cover by Genus at each Sector
-  cov1_sec=read.csv("data/NWHI_MHI_Cover_T1_Data_Sector.csv")
-  cov3_sec=read.csv("data/NWHI_MHI_Cover_T3_Data_Sector.csv")
+  cov1_sec=read.csv("2-VitalRateFunctions/Data/NWHI_MHI_Cover_T1_Data_Sector.csv")
+  cov3_sec=read.csv("2-VitalRateFunctions/Data/NWHI_MHI_Cover_T3_Data_Sector.csv")
   uSec=na.omit(unique(ColonyLevel$SEC_NAME))
   names(cov1_sec)[2:15]=substr(names(cov1_sec)[2:15],6,999)
   meta=names(cov1_sec)[2:6]
@@ -360,7 +366,7 @@ for(i_b in 1:length(binwidths)){
            LOW_CI95.RecVal= MN.RecVal - CI95.RecVal,
            HIGH_CI95.RecVal= MN.RecVal + CI95.RecVal
            )
-  #write.csv(Jsec_P_Asec, "output/SectorLevelStockRec.csv", row.names = FALSE)
+  write.csv(Jsec_P_Asec, "2-VitalRateFunctions/Output/SectorLevelStockRec.csv", row.names = FALSE)
   
   #plot site-level stock recruitment values and sector-level stock recruitment values
   Site=ggplot(RecSFMDataFrame,aes(RecSFM_p_SiteAdcm2_Yr))+
@@ -380,7 +386,31 @@ for(i_b in 1:length(binwidths)){
   Site/Sec
   
   
+  
+  #Sector Stock Rec for REGIONAL MODEL
+  Regional_SectorStockRec <- as.data.frame(Jsec_P_Asec) 
+  Regional_SectorStockRec$MN.RecVal[Regional_SectorStockRec$MN.RecVal == Inf] <- NA
+  Regional_SectorStockRec$SE.RecVal[Regional_SectorStockRec$SE.RecVal == Inf] <- NA
+  
+  Regional_SectorStockRec <- Regional_SectorStockRec %>%
+    select(ANALYSIS_SEC,OBS_YEAR,GENUS_CODE,REGION,MN.RecVal,SE.RecVal)%>%
+    group_by(GENUS_CODE, REGION) %>%
+    summarise(SectorStock_median = median(MN.RecVal,na.rm = TRUE),
+              SectorStock_MD_CI95_LO = median(MN.RecVal-1.96*SE.RecVal,na.rm=T),
+              SectorStock_MD_CI95_HI = median(MN.RecVal+1.96*SE.RecVal,na.rm=T),
+              SectorStock_mean = mean(MN.RecVal,na.rm = TRUE),
+              SectorStock_MN_CI95_LO = mean(MN.RecVal-1.96*SE.RecVal, na.rm = TRUE), 
+              SectorStock_MN_CI95_HI = mean(MN.RecVal+1.96*SE.RecVal, na.rm = TRUE) 
+    )
+  #change negative low CI values to 0 since you can't have negative recruitment
+  Regional_SectorStockRec[Regional_SectorStockRec<0] = 0
+  
+  
+  
+  ##############################
   #####SECTOR-STOCK-ALL REC#####
+  #Case 2 (continued): Assume Sector-Level Stock-Recruitment using ALL sectors, not only study sectors)
+  #############################
   
   #sector level recruitment for all sectors in the NWHI and MHI (not just study sectors)
   Jsec_P_ALL= rea_sec %>%
@@ -403,21 +433,11 @@ for(i_b in 1:length(binwidths)){
            HIGH_CI95.RecVal= MN.RecVal + CI95.RecVal
     )
   
+  #plot the sector-level-all rec value for all islands in the Hawaiian Archipelago
   Jsec_P_ALL %>% #filter(ISLAND%in%c("Hawaii","Maui","Oahu","French Frigate","Lisianski","Kure")) %>% 
   ggplot(aes(MN.RecVal))+geom_histogram(binwidth=0.001)+facet_grid(ISLAND~GENUS_CODE)#+xlim(c(0,.12))
-  #View(Jsec_P_Asec)  
-  
-  Jsec_P_ALL %>% #filter(ISLAND%in%c("Hawaii","Maui","Oahu","French Frigate","Lisianski","Kure")) %>% 
-    ggplot(aes(MN.RecVal))+
-    geom_histogram(binwidth=0.01)+
-    geom_vline(aes(xintercept=MD.RecVal_Sec_All),data=RecVal_Sec_Dists,color="darkcyan",lty=1)+
-    geom_vline(aes(xintercept=MD.CI95_LO.RecVal_Sec_All),data=RecVal_Sec_Dists,color="darkcyan",lty=3)+
-    geom_vline(aes(xintercept=MD.CI95_HI.RecVal_Sec_All),data=RecVal_Sec_Dists,color="darkcyan",lty=3)+
-    facet_grid(REGION~GENUS_CODE)+
-    scale_x_sqrt()
-  
-  
-  
+    
+
   #Rec values by region and genus code (SECTOR-STOCK-ALL REC) for REGIONAL MODEL
   RecVal_Sec_Dists=Jsec_P_ALL %>% filter(!is.infinite(MN.RecVal)) %>% 
     group_by(REGION,GENUS_CODE) %>% 
@@ -428,37 +448,33 @@ for(i_b in 1:length(binwidths)){
               MN.CI95_LO.RecVal_Sec_All=mean(MN.RecVal-1.96*SE.RecVal,na.rm=T),
               MN.CI95_HI.RecVal_Sec_All=mean(MN.RecVal+1.96*SE.RecVal,na.rm=T)
     )
+
+#plot distributions of sector-stock-all recruitment values for REGIONAL MODEL
+  Jsec_P_ALL %>% #filter(ISLAND%in%c("Hawaii","Maui","Oahu","French Frigate","Lisianski","Kure")) %>% 
+    ggplot(aes(MN.RecVal))+
+    geom_histogram(binwidth=0.01)+
+    geom_vline(aes(xintercept=MD.RecVal_Sec_All),data=RecVal_Sec_Dists,color="darkcyan",lty=1)+
+    geom_vline(aes(xintercept=MD.CI95_LO.RecVal_Sec_All),data=RecVal_Sec_Dists,color="darkcyan",lty=3)+
+    geom_vline(aes(xintercept=MD.CI95_HI.RecVal_Sec_All),data=RecVal_Sec_Dists,color="darkcyan",lty=3)+
+    facet_grid(REGION~GENUS_CODE)+
+    scale_x_sqrt()  
   
   
-  #Sector Stock Rec for REGIONAL MODEL
-  Regional_SectorStockRec <- as.data.frame(Jsec_P_Asec) 
-  Regional_SectorStockRec$MN.RecVal[Regional_SectorStockRec$MN.RecVal == Inf] <- NA
-  Regional_SectorStockRec$SE.RecVal[Regional_SectorStockRec$SE.RecVal == Inf] <- NA
-  
-  Regional_SectorStockRec <- Regional_SectorStockRec %>%
-    select(ANALYSIS_SEC,OBS_YEAR,GENUS_CODE,REGION,MN.RecVal,SE.RecVal)%>%
-    group_by(GENUS_CODE, REGION) %>%
-    summarise(SectorStock_median = median(MN.RecVal,na.rm = TRUE),
-              SectorStock_MD_CI95_LO = median(MN.RecVal-1.96*SE.RecVal,na.rm=T),
-              SectorStock_MD_CI95_HI = median(MN.RecVal+1.96*SE.RecVal,na.rm=T),
-              SectorStock_mean = mean(MN.RecVal,na.rm = TRUE),
-              SectorStock_MN_CI95_LO = mean(MN.RecVal-1.96*SE.RecVal, na.rm = TRUE), 
-              SectorStock_MN_CI95_HI = mean(MN.RecVal+1.96*SE.RecVal, na.rm = TRUE) 
-    )
-  #change negative low CI values to 0 since you can't have negative recruitment
-  Regional_SectorStockRec[Regional_SectorStockRec<0] = 0
+  ############################
+  #REGIONAL MODEL INTEGRATION: Sector-stock and sector-stock-all recruitment
   
   #Include Sec_All values in Regional sector stock
   Regional_SectorStockRec <- left_join(Regional_SectorStockRec,RecVal_Sec_Dists, by= c("GENUS_CODE","REGION"))
   
-  #write.csv(Regional_SectorStockRec, "output/SectorLevelStockRec_regional.csv", row.names = FALSE)
+  write.csv(Regional_SectorStockRec, "2-VitalRateFunctions/Output/SectorLevelStockRec_regional.csv", row.names = FALSE)
+  
+  
+  
   
   ################################################################################
   ######### Site + Interval Years + Genus models ###############################
   ########## GROWTH ! ############################################################
   ################################################################################
-  # Change this value to change the # of minimum data points at each site interval. If it is below this value then the model will not run and will skip this site/interval combination
-  #minTrans <- 20 
   
   GrowthTib=ColonyLevel %>% 
     filter(TransitionTypeSimple %in% c("GROWTH","SHRINK")) %>% 
@@ -477,10 +493,10 @@ for(i_b in 1:length(binwidths)){
     select_if(negate(is.list)) 
   
   GrowthDataFrame = as.data.frame(GrowthTib)
-  #save(GrowthDataFrame, file = paste0("data/",Name,"_Gmodfits.rdata"))
+  save(GrowthDataFrame, file = paste0("2-VitalRateFunctions/Output/",Name,"_Gmodfits.rdata"))
 
   
-  #Regional model
+  #Regional growth model
   GrowthRegionalTib=ColonyLevel %>% 
     filter(TransitionTypeSimple %in% c("GROWTH","SHRINK")) %>% 
     group_by(Genus_Code,REGION) %>% 
@@ -498,7 +514,7 @@ for(i_b in 1:length(binwidths)){
     select_if(negate(is.list)) 
   head(GrowthRegionalTib)
   GrowthRegionalDF = as.data.frame(GrowthRegionalTib)
-  #save(GrowthRegionalDF, file = paste0("data/",Name,"_RegionalGmodfits.rdata"))
+  save(GrowthRegionalDF, file = paste0("2-VitalRateFunctions/Output/",Name,"_Gmodfits_regional.rdata"))
   
   
   ################################################################################
@@ -539,6 +555,7 @@ for(i_b in 1:length(binwidths)){
   
   ColonyLevel_ap=left_join(ColonyLevel,AnnSurvTib[,c("SIG","ColonyID","s.N","AnnSurvProbs")])
   
+  #plot annualized survival probability
   ggplot(ColonyLevel_ap,aes(x=log10_SS,y=AnnSurvProbs,fill=Site,size=s.N))+
     geom_point(shape=21,color="white")+
     facet_grid(Island~Genus_Code)
@@ -563,7 +580,7 @@ for(i_b in 1:length(binwidths)){
     select_if(negate(is.list)) 
   RegionalAnnSurvDataFrame = as.data.frame(RegionalAnnSurvTib)
   head(RegionalAnnSurvDataFrame)
-  #save(RegionalAnnSurvDataFrame, file = sprintf("data/%s_RegionalSmodfits.rdata", Name))
+  save(RegionalAnnSurvDataFrame, file = sprintf("2-VitalRateFunctions/Output/%s_Smodfits_regional.rdata", Name))
   
   # SIG Survival
   SurvTib=ColonyLevel %>% 
@@ -585,7 +602,7 @@ for(i_b in 1:length(binwidths)){
     select_if(negate(is.list)) 
   SurvDataFrame = as.data.frame(SurvTib)
   head(SurvDataFrame)
-  #save(SurvDataFrame, file = sprintf("data/%s_Smodfits.rdata", Name))
+  save(SurvDataFrame, file = sprintf("2-VitalRateFunctions/Output/%s_Smodfits.rdata", Name))
   
   #compare regional vs SIG slope/int
   ggplot()+
@@ -603,10 +620,9 @@ for(i_b in 1:length(binwidths)){
   
   #SIG models
   combo <- left_join(GrowthDataFrame,SurvDataFrame)
-  #save(combo, file = sprintf("data/%s_allmodfits.rdata",Name))
+  #save(combo, file = sprintf("2-VitalRateFunctions/Data/%s_allmodfits.rdata",Name))
   no_NAs <- na.omit(combo)
   GrowthSurv_SIG <- data.frame()
-  
   GrowthSurv_SIG <- no_NAs[order(no_NAs$Site),]
   GrowthSurv_SIG$StartingYear=as.numeric(year(GrowthSurv_SIG$StartingDate))
   GrowthSurv_SIG$SEC_NAME=Site2Sec_ONLY[match(GrowthSurv_SIG$Site,Site2Sec_ONLY$Site),"SEC_NAME"]
@@ -647,13 +663,10 @@ for(i_b in 1:length(binwidths)){
   table(!is.na(ModelParams_SIG$MN.RecVal_Site)&!is.na(ModelParams_SIG$MN.RecVal_Sec))
   table(!is.na(ModelParams_SIG$MD.RecVal_Sec_All))
   
-  #write.csv(RecSFMDataFrame,file = "data/Site_Recruits_SFM.csv")
-  #write.csv(Jsec_P_Asec,file = "data/Sector_Recruits_REA.csv")
-  #write.csv(ModelParams_SIG,file = "data/ModelParams_SIG.csv")
-  
-  # Two values of Site Level not matching!!!!
-  
-  #save(ModelParams_SIG, file = sprintf("data/%s_allmodfits_noNAs.rdata",Name))
+  #Save
+  save(ModelParams_SIG, file = sprintf("2-VitalRateFunctions/Output/%s_allmodfits_noNAs.rdata",Name))
+  #optional: save final vital rate model parameters as csv
+  #write.csv(ModelParams_SIG,file = "2-VitalRateFunctions/Output/ModelParams_SIG.csv")
   
   ModelParams_SIG %>% 
     group_by(Site,StartingYear) %>% 
@@ -677,6 +690,6 @@ for(i_b in 1:length(binwidths)){
   #add REA sector-level stock recruitment data
   ModelParams_Regional = left_join(ModelParams_Regional,Regional_SectorStockRec,by=c("Genus_Code"="GENUS_CODE","REGION"))
   
-  #save(ModelParams_Regional, file = sprintf("data/%s_RegionalModFits_noNAs.rdata",Name))
+  save(ModelParams_Regional, file = sprintf("2-VitalRateFunctions/Output/%s_allModFits_noNAs_regional.rdata",Name))
   
 
